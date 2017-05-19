@@ -1,0 +1,42 @@
+- name: installation de Git
+  package: name=git state=present
+
+- name: installation de Maven
+  package: name=maven state=present
+
+- name: installation du jdk8
+  package: name=openjdk-8-jdk-headless state=present
+
+- name: création du compte pour tomee
+  user:
+    name: tomee
+    shell: /bin/false
+    system: yes
+    home: '{{tomee_home}}'
+
+- name: création des répertoires pour tomee
+  file:
+    path: '{{tomee_serHome}}'
+    state: directory
+    owner: tomee
+    group: tomee
+
+- name: configuration du répertoire pour tomee
+  get_url:
+      url:  http://repo.maven.apache.org/maven2/org/apache/tomee/apache-tomee/7.0.3/apache-tomee-7.0.3-plus.tar.gz
+      dest: '/opt/tomee/'
+
+- name: Unzip et installation de TomEE dans /opt/tomee
+  shell: /bin/tar xzvf /opt/tomee/apache-tomee-7.0.3-plus.tar.gz -C /opt/tomee/ --strip-components=1
+
+- name: tomee propriétaire de /opt/tomee/
+  shell: chown -R tomee /opt/tomee/*
+
+- name: configuration fichier systemD
+  shell: echo "[Unit] Description=Apache Tomcat Web Application Container After=network.target [Service] Type=forking Environment=JAVA_HOME=/usr/lib/jvm/java-1.8.0-openjdk-amd64/jre Environment=CATALINA_HOME=/opt/tomee/ Environment=CATALINA_BASE=/opt/tomee/ Environment='CATALINA_OPTS=-Xms512M -Xmx1024M -server -XX:+UseParallelGC' Environment='JAVA_OPTS=-Djava.awt.headless=true -Djava.security.egd=file:/dev/./urandom' ExecStart=/opt/tomee/bin/startup.sh ExecStop=/opt/tomee/bin/shutdown.sh User=tomee Group=tomee UMask=0007 RestartSec=10 Restart=always [Install] WantedBy=multi-user.target" > /etc/systemd/system/tomee.Service
+
+- name: test systemD
+  shell: systemctl daemon-reload
+
+- name: activation systemd
+  shell: systemctl start tomee

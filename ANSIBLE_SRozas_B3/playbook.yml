@@ -1,0 +1,4 @@
+---
+- hosts: SR-server
+  roles:
+    - jenkins-server
